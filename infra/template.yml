@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Creates a DynamoDB Table Stream and a Lambda consumer
+
+Parameters:
+
+  TableName:
+    Type: String
+    Default: Customer
+
+  LambdaConsumerName:
+    Type: String
+    Default: LambdaConsumerName
+
+  BucketLambdaSourceCode:
+    Type: String
+    Default: tg-quicklabs-lambdasrc
+
+  BucketKeyLambdaConsumerSourceCode:
+    Type: String
+    Default: LambdaConsumer.zip
+
+  Owner:
+    Type: String
+    Default: tg
+
+Resources:
+
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: customer_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customer_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      ProvisionedThroughput:
+        ReadCapacityUnits: 0
+        WriteCapacityUnits: 0
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      Tags:
+        - Key: Owner
+          Value: !Ref Owner
+
+  LambdaConsumerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${LambdaConsumerName}ExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: !Sub ${LambdaConsumerName}ExecutionRolePolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:*
+              - dynamodb:DescribeStream
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:ListStreams
+            Resource: "*"
+
+  LambdaConsumer:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaConsumerName
+      Runtime: nodejs14.x
+      Role: !GetAtt LambdaConsumerExecutionRole.Arn
+      Handler: index.handler
+      Code:
+        S3Bucket: !Ref BucketLambdaSourceCode
+        S3Key: !Ref BucketKeyLambdaConsumerSourceCode
+      Tags:
+        - Key: Owner
+          Value: !Ref Owner
+
+  DynamoDBEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      Enabled: true
+      EventSourceArn: !GetAtt Table.StreamArn
+      # FilterCriteria: Json
+      FunctionName: !Ref LambdaConsumerName
+      StartingPosition: LATEST
