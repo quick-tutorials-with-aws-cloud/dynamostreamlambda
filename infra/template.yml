@@ -1,9 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: Creates a DynamoDB Table Stream and a Lambda consumer
+Description: Creates a DynamoDB Table Streams and a Lambda to consume it
 
 Parameters:
-
   TableName:
     Type: String
     Default: Customer
@@ -25,7 +24,6 @@ Parameters:
     Default: tg
 
 Resources:
-
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -51,30 +49,30 @@ Resources:
     Properties:
       RoleName: !Sub ${LambdaConsumerName}ExecutionRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: !Sub ${LambdaConsumerName}ExecutionRolePolicy
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-              - logs:CreateLogStream
-              - logs:CreateLogGroup
-              - logs:PutLogEvents
-              - dynamodb:DescribeStream
-              - dynamodb:GetRecords
-              - dynamodb:GetShardIterator
-              - dynamodb:ListStreams
-            Resource: "*"
+        - PolicyName: !Sub ${LambdaConsumerName}ExecutionRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:CreateLogGroup
+                  - logs:PutLogEvents
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: "*"
 
   LambdaConsumer:
     Type: AWS::Lambda::Function
