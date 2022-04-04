@@ -60,11 +60,19 @@ Resources:
                   - logs:CreateLogStream
                   - logs:CreateLogGroup
                   - logs:PutLogEvents
+                Resource: "*"
+
+        - PolicyName: !Sub ${LambdaConsumerName}DynamoDBRolePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
                   - dynamodb:DescribeStream
                   - dynamodb:GetRecords
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
-                Resource: "*"
+                Resource: !Sub "arn:aws:dynamodb:*:*:table/${TableName}/stream/*"
 
   LambdaConsumer:
     Type: AWS::Lambda::Function
